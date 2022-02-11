@@ -6,6 +6,7 @@ namespace OneClickHealthReport.API.Hubs
     public interface ILoginClient
     {
         Task ReceiveAuthCode(string auth_code);
+        Task ReceiveKey(string key);
         Task ReceiveQrCode(string img_base64);
     }
 
@@ -29,6 +30,7 @@ namespace OneClickHealthReport.API.Hubs
                 if (scan_result == true)
                 {
                     await Clients.Caller.ReceiveAuthCode(wecom_qr_code_service_.GetAuthCode());
+                    await Clients.Caller.ReceiveKey(wecom_qr_code_service_.GetKey());
                     return;
                 }
             }

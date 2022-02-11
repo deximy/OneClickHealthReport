@@ -113,5 +113,10 @@ namespace OneClickHealthReport.API.Services
             }
             return auth_code_;
         }
+
+        public string GetKey()
+        {
+            return key_.Result;
+        }
     }
 }
