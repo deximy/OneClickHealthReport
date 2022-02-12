@@ -8,6 +8,7 @@ namespace OneClickHealthReport.API.Hubs
         Task ReceiveAuthCode(string auth_code);
         Task ReceiveKey(string key);
         Task ReceiveQrCode(string img_base64);
+        Task ReceiveResult(bool result);
     }
 
     public class Login : Hub<ILoginClient>
@@ -31,6 +32,9 @@ namespace OneClickHealthReport.API.Hubs
                 {
                     await Clients.Caller.ReceiveAuthCode(wecom_qr_code_service_.GetAuthCode());
                     await Clients.Caller.ReceiveKey(wecom_qr_code_service_.GetKey());
+                    var health_report_service = new HealthReport(wecom_qr_code_service_.GetKey(), wecom_qr_code_service_.GetAuthCode());
+                    var result = await health_report_service.SubmitHealthReport();
+                    await Clients.Caller.ReceiveResult(result);
                     return;
                 }
             }

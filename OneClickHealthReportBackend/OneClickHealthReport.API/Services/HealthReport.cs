@@ -16,6 +16,7 @@ namespace OneClickHealthReport.API.Services
     internal class Body
     {
         public List<FormInfo>? form_items { get; set; }
+        public object? autofill_form_reply { get; set; }
     }
 
     internal class FormInfo
@@ -66,6 +67,49 @@ namespace OneClickHealthReport.API.Services
                 }
             }
             throw new InvalidDataException(content);
+        }
+
+        private async Task<string> GetLastReport(string form_id)
+        {
+            var response = await client_.GetAsync($"https://doc.weixin.qq.com/form/share?f=json&form_id={form_id}");
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            if (content == null)
+            {
+                throw new InvalidDataException(response.ToString());
+            }
+            var result = JsonSerializer.Deserialize<Response>(content);
+            var last_report = result?.body?.autofill_form_reply?.ToString();
+            if (last_report == null)
+            {
+                throw new InvalidDataException(content);
+            }
+            return last_report;
+        }
+
+        public async Task<bool> SubmitHealthReport()
+        {
+            var form_id = await GetHealthReportFormId();
+            var form_reply = await GetLastReport(form_id);
+            var request_content = new MultipartFormDataContent();
+            var boundary = request_content.Headers?.ContentType?.Parameters.Single(o => o.Name == "boundary");
+            boundary!.Value = boundary?.Value?.Replace("\"", string.Empty);
+            request_content.Add(new StringContent("2"), "\"type\"");
+            request_content.Add(new StringContent("json"), "\"f\"");
+            request_content.Add(new StringContent("hb_noticard"), "\"source\"");
+            request_content.Add(new StringContent("null"), "\"vcode\"");
+            request_content.Add(new StringContent(form_id), "\"form_id\"");
+            request_content.Add(new StringContent(form_reply), "\"form_reply\"");
+
+            var response = await client_.PostAsync("https://doc.weixin.qq.com/form/share?f=json", request_content);
+            response.EnsureSuccessStatusCode();
+            var response_content = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<Response>(response_content);
+            if (result?.head?.ret == 0)
+            {
+                return true;
+            }
+            throw new InvalidDataException(response_content);
         }
 
         public async Task<bool> SubmitHealthReport(Models.HealthReport report_param)
