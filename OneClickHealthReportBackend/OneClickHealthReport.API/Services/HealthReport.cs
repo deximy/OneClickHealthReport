@@ -22,6 +22,7 @@ namespace OneClickHealthReport.API.Services
     internal class FormInfo
     {
         public string? form_id { get; set; }
+        public string? title { get; set; }
     }
 
     public class HealthReport
@@ -58,12 +59,12 @@ namespace OneClickHealthReport.API.Services
             var result = JsonSerializer.Deserialize<Response>(content);
             if (result?.head?.ret == 0)
             {
-                if ((result.body?.form_items?.Any() ?? false) && (result.body.form_items[0].form_id != null))
+                foreach (var item in result?.body?.form_items ?? new List<FormInfo>())
                 {
-#pragma warning disable CS8603 // Possible null reference return.
-                    // F*CK U. NO POSSIBLE NULL!!!!!!!!
-                    return result.body.form_items[0].form_id;
-#pragma warning restore CS8603 // Possible null reference return.
+                    if (item.title == "每日健康打卡" && item.form_id != null)
+                    {
+                        return item.form_id;
+                    }
                 }
             }
             throw new InvalidDataException(content);
